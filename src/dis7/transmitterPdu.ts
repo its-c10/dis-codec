@@ -45,6 +45,8 @@ export interface ModulationType {
   radioSystem: number;
 }
 
+/** Antenna pattern length in octets for Beam Antenna Pattern. */
+export const BEAM_ANTENNA_PATTERN_LENGTH = 40;
 /**
  * Beam Antenna Pattern record (320 bits). Table 31.
  */
@@ -59,9 +61,6 @@ export interface BeamAntennaPattern {
   eX: number;
   phase: number;
 }
-
-/** Antenna pattern length in octets for Beam Antenna Pattern. */
-export const BEAM_ANTENNA_PATTERN_LENGTH = 40;
 
 /** Variable Transmitter Parameters record (variable length). */
 export interface VariableTransmitterParameter {

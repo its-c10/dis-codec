@@ -1,11 +1,13 @@
 # dis-codec
 
-Spec-accurate **Distributed Interactive Simulation (DIS)** encode/decode library in TypeScript. Wire format follows IEEE 1278.1 (DIS application protocols). PDUs are encoded with correct header length for UDP/DIS feeds.
+TypeScript encode/decode library for **Distributed Interactive Simulation (DIS)** with wire format aligned to IEEE 1278.1 (DIS application protocols).
+
+This project focuses on a **practical subset of DIS 7 PDUs** (see list below). It is **not** an implementation of the full DIS specification.
 
 ## Install
 
 ```bash
-npm install dis-codec
+npm install @its-c10/dis-codec
 ```
 
 ## Usage
@@ -13,7 +15,7 @@ npm install dis-codec
 **Encode a PDU and get bytes for UDP:**
 
 ```ts
-import { BinaryWriter, dis7 } from "dis-codec";
+import { BinaryWriter, dis7 } from "@its-c10/dis-codec";
 
 const writer = new BinaryWriter();
 dis7.encodeCreateEntityPdu(writer, {
@@ -39,7 +41,7 @@ const bytes = new Uint8Array(writer.toArrayBuffer());
 **Decode a PDU from received bytes:**
 
 ```ts
-import { BinaryReader, dis7 } from "dis-codec";
+import { BinaryReader, dis7 } from "@its-c10/dis-codec";
 
 const reader = new BinaryReader(udpPacketBuffer);
 const pdu = dis7.decodeEntityStatePdu(reader);
@@ -65,7 +67,7 @@ if (header.pduType === dis7.PDU_TYPE_ENTITY_STATE) {
 ## DIS 7 PDUs
 
 | PDU | Encode / Decode | Notes |
-|-----|-----------------|--------|
+|-----|-----------------|-------|
 | Entity State | `encodeEntityStatePdu` / `decodeEntityStatePdu` | Variable length |
 | Create Entity | `encodeCreateEntityPdu` / `decodeCreateEntityPdu` | 28 bytes |
 | Remove Entity | `encodeRemoveEntityPdu` / `decodeRemoveEntityPdu` | 28 bytes |
@@ -74,7 +76,7 @@ if (header.pduType === dis7.PDU_TYPE_ENTITY_STATE) {
 | Electromagnetic Emission | `encodeElectromagneticEmissionPdu` / `decodeElectromagneticEmissionPdu` | Variable length |
 | Transmitter | `encodeTransmitterPdu` / `decodeTransmitterPdu` | Variable length |
 
-Constants for PDU types, protocol families, and fixed lengths are on `dis7` (e.g. `dis7.PDU_TYPE_ENTITY_STATE`, `dis7.CREATE_ENTITY_PDU_LENGTH`).
+Constants for PDU types, protocol families, and fixed lengths are available on `dis7` (for example `dis7.PDU_TYPE_ENTITY_STATE` and `dis7.CREATE_ENTITY_PDU_LENGTH`).
 
 ## Requirements
 
