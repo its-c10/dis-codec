@@ -1,0 +1,34 @@
+{
+  "name": "@its-c10/dis-codec",
+  "version": "0.2.0",
+  "description": "Spec-accurate Distributed Interactive Simulation (DIS) encode/decode library in TypeScript",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc -w",
+    "test": "vitest",
+    "prepublishOnly": "npm run build",
+    "clean": "rimraf dist"
+  },
+  "keywords": [
+    "dis",
+    "distributed-interactive-simulation",
+    "ieee-1278",
+    "codec",
+    "pdu",
+    "udp",
+    "typescript"
+  ],
+  "author": "Caleb Owens",
+  "license": "MIT",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "devDependencies": {
+    "rimraf": "^6.1.3",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.0"
+  }
+}
