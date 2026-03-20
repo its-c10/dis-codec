@@ -1,6 +1,6 @@
 {
   "name": "@its-c10/dis-codec",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "description": "Spec-accurate Distributed Interactive Simulation (DIS) encode/decode library in TypeScript",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
