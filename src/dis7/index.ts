@@ -13,7 +13,9 @@ export {
   PDU_TYPE_STOP_FREEZE,
   PDU_TYPE_ELECTROMAGNETIC_EMISSION,
   PDU_TYPE_TRANSMITTER,
+  PDU_TYPE_POINT_OBJECT_STATE,
   PROTOCOL_FAMILY_RADIO_COMMUNICATIONS,
+  PROTOCOL_FAMILY_DISTRIBUTED_EMISSIONS_REGENERATION,
   START_RESUME_PDU_LENGTH,
   STOP_FREEZE_PDU_LENGTH,
   CREATE_ENTITY_PDU_LENGTH,
@@ -21,6 +23,7 @@ export {
   ENTITY_STATE_PDU_FIXED_LENGTH,
   ENTITY_STATE_VARIABLE_PARAMETER_RECORD_LENGTH,
   TRANSMITTER_PDU_FIXED_LENGTH,
+  POINT_OBJECT_STATE_PDU_LENGTH,
 } from "./constants.js";
 export {
   type PduHeader,
@@ -80,3 +83,9 @@ export {
   decodeTransmitterPdu,
   encodeTransmitterPdu,
 } from "./transmitterPdu.js";
+export {
+  type PointObjectStatePdu,
+  type PointObjectType,
+  decodePointObjectStatePdu,
+  encodePointObjectStatePdu,
+} from "./pointObjectStatePdu.js";

@@ -66,8 +66,8 @@ export interface BeamAntennaPattern {
 export interface VariableTransmitterParameter {
   /** 32-bit enumeration. */
   recordType: number;
-  /** Record length in octets (6 + K + P). */
-  recordLength: number;
+  /** Record length in octets (6 + data.length). Set automatically during encode. */
+  recordLength?: number;
   /** Record-specific fields + padding (recordLength - 6 octets). */
   data: Uint8Array;
 }
@@ -103,8 +103,8 @@ export interface TransmitterPdu {
   cryptoSystem: number;
   /** 16-bit record. */
   cryptoKeyId: number;
-  /** Length of modulation parameters in octets (M). */
-  lengthOfModulationParameters: number;
+  /** Length of modulation parameters in octets (M). Set automatically during encode. */
+  lengthOfModulationParameters?: number;
   /** Modulation parameters (M octets). */
   modulationParameters: Uint8Array;
   /** Antenna pattern (e.g. Beam Antenna Pattern, Table 31). */
@@ -243,8 +243,9 @@ function encodeVariableTransmitterParameter(
   writer: BinaryWriter,
   v: VariableTransmitterParameter
 ): void {
+  const recordLength = 6 + v.data.byteLength;
   writer.writeUint32(v.recordType);
-  writer.writeUint16(v.recordLength);
+  writer.writeUint16(recordLength);
   if (v.data.length > 0) {
     writer.writeBytes(v.data);
   }
@@ -328,7 +329,7 @@ export function encodeTransmitterPdu(
   encodeModulationType(writer, pdu.modulationType);
   writer.writeUint16(pdu.cryptoSystem);
   writer.writeUint16(pdu.cryptoKeyId);
-  writer.writeUint8(pdu.lengthOfModulationParameters);
+  writer.writeUint8(pdu.modulationParameters.byteLength);
   writer.writeUint8(0); // padding
   writer.writeUint16(0); // padding
   writer.writeBytes(pdu.modulationParameters);

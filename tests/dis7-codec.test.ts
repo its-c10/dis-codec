@@ -272,7 +272,6 @@ describe("DIS 7 Electromagnetic Emission PDU", () => {
     padding: 0,
     emitterSystems: [
       {
-        systemDataLength: 24,
         numberOfBeams: 1,
         padding: 0,
         emitterSystem: {
@@ -283,7 +282,6 @@ describe("DIS 7 Electromagnetic Emission PDU", () => {
         location: { x: 0, y: 0, z: 0 },
         beams: [
           {
-            beamDataLength: 40,
             beamNumber: 0,
             beamParameterIndex: 0,
             fundamentalParameterData: {
@@ -323,9 +321,22 @@ describe("DIS 7 Electromagnetic Emission PDU", () => {
     dis7.encodeElectromagneticEmissionPdu(w, sampleEePdu);
     const r = new BinaryReader(w.toArrayBuffer());
     const decoded = dis7.decodeElectromagneticEmissionPdu(r);
+    // Length fields are computed during encode; decoded includes them from wire
     expect(decoded).toEqual({
       ...sampleEePdu,
       header: { ...sampleEePdu.header, length: w.getOffset() },
+      emitterSystems: [
+        {
+          ...sampleEePdu.emitterSystems[0],
+          systemDataLength: 67, // 19 fixed + 48 per beam
+          beams: [
+            {
+              ...sampleEePdu.emitterSystems[0].beams[0],
+              beamDataLength: 47, // beamNumber through beamStatus
+            },
+          ],
+        },
+      ],
     });
     expect(r.getOffset()).toBe(w.getOffset());
   });
@@ -476,7 +487,6 @@ describe("DIS 7 Transmitter PDU", () => {
     },
     cryptoSystem: 0,
     cryptoKeyId: 0,
-    lengthOfModulationParameters: 0,
     modulationParameters: new Uint8Array(0),
     antennaPattern: {
       beamDirection: { psi: 0, theta: 0, phi: 0 },
@@ -509,6 +519,7 @@ describe("DIS 7 Transmitter PDU", () => {
     const decoded = dis7.decodeTransmitterPdu(r);
     expect(decoded).toEqual({
       ...sampleTransmitterPdu,
+      lengthOfModulationParameters: 0, // computed from modulationParameters during encode
       header: { ...sampleTransmitterPdu.header, length: transmitterPduMinLength },
     });
     expect(r.getOffset()).toBe(transmitterPduMinLength);
@@ -517,7 +528,6 @@ describe("DIS 7 Transmitter PDU", () => {
   it("round-trips TransmitterPdu with modulation data", () => {
     const pdu: dis7.TransmitterPdu = {
       ...sampleTransmitterPdu,
-      lengthOfModulationParameters: 2,
       modulationParameters: new Uint8Array([0xab, 0xcd]),
     };
     const w = new BinaryWriter();
@@ -526,7 +536,65 @@ describe("DIS 7 Transmitter PDU", () => {
     const decoded = dis7.decodeTransmitterPdu(r);
     expect(decoded).toEqual({
       ...pdu,
+      lengthOfModulationParameters: 2, // computed from modulationParameters during encode
       header: { ...pdu.header, length: w.getOffset() },
     });
+  });
+});
+
+describe("DIS 7 Point Object State PDU", () => {
+  const samplePdu: dis7.PointObjectStatePdu = {
+    header: {
+      protocolVersion: dis7.PROTOCOL_VERSION,
+      exerciseId: 1,
+      pduType: dis7.PDU_TYPE_POINT_OBJECT_STATE,
+      protocolFamily: dis7.PROTOCOL_FAMILY_DISTRIBUTED_EMISSIONS_REGENERATION,
+      timestamp: 0,
+      length: dis7.POINT_OBJECT_STATE_PDU_LENGTH,
+      pduStatus: 0,
+      padding: 0,
+    },
+    objectId: {
+      simulationAddress: { site: 1, application: 2 },
+      entity: 1,
+    },
+    referencedObjectId: {
+      simulationAddress: { site: 0, application: 0 },
+      entity: 0,
+    },
+    updateNumber: 0,
+    forceId: 0,
+    modifications: 0,
+    objectType: {
+      domain: 0,
+      objectKind: 0,
+      category: 0,
+      subcategory: 0,
+    },
+    objectLocation: { x: 0, y: 0, z: 0 },
+    objectOrientation: { psi: 0, theta: 0, phi: 0 },
+    specificObjectAppearance: 0,
+    generalObjectAppearance: 0,
+    padding: 0,
+    requesterSimulationId: { site: 0, application: 0 },
+    receivingSimulationId: { site: 0, application: 0 },
+    padding2: 0,
+  };
+
+  it("encodes Point Object State PDU with type 43 and family 9", () => {
+    const w = new BinaryWriter();
+    dis7.encodePointObjectStatePdu(w, samplePdu);
+    const u8 = new Uint8Array(w.toArrayBuffer());
+    expect(u8.length).toBe(88);
+    expect(u8[2]).toBe(43);
+    expect(u8[3]).toBe(9);
+  });
+
+  it("round-trips PointObjectStatePdu", () => {
+    const w = new BinaryWriter();
+    dis7.encodePointObjectStatePdu(w, samplePdu);
+    const r = new BinaryReader(w.toArrayBuffer());
+    expect(dis7.decodePointObjectStatePdu(r)).toEqual(samplePdu);
+    expect(r.getOffset()).toBe(88);
   });
 });

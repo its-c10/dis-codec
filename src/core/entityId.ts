@@ -28,3 +28,18 @@ export function encodeEntityId(writer: BinaryWriter, value: EntityId): void {
   writer.writeUint16(value.simulationAddress.application);
   writer.writeUint16(value.entity);
 }
+
+export function decodeSimulationAddress(reader: BinaryReader): SimulationAddress {
+  return {
+    site: reader.readUint16(),
+    application: reader.readUint16(),
+  };
+}
+
+export function encodeSimulationAddress(
+  writer: BinaryWriter,
+  value: SimulationAddress
+): void {
+  writer.writeUint16(value.site);
+  writer.writeUint16(value.application);
+}

@@ -31,8 +31,14 @@ export const PDU_TYPE_ELECTROMAGNETIC_EMISSION = 23;
 /** PDU type: Transmitter. */
 export const PDU_TYPE_TRANSMITTER = 25;
 
+/** PDU type: Point Object State. */
+export const PDU_TYPE_POINT_OBJECT_STATE = 43;
+
 /** Electromagnetic Emission protocol family. */
 export const PROTOCOL_FAMILY_ELECTROMAGNETIC_EMISSION = 6;
+
+/** Distributed Emissions Regeneration protocol family. */
+export const PROTOCOL_FAMILY_DISTRIBUTED_EMISSIONS_REGENERATION = 9;
 
 /** Radio Communications protocol family. */
 export const PROTOCOL_FAMILY_RADIO_COMMUNICATIONS = 4;
@@ -57,3 +63,6 @@ export const ENTITY_STATE_VARIABLE_PARAMETER_RECORD_LENGTH = 16;
 
 /** Transmitter PDU fixed portion in bytes (104). Total = 104 + M + A + sum of variable record sizes. */
 export const TRANSMITTER_PDU_FIXED_LENGTH = 104;
+
+/** Point Object State PDU total length on wire (bytes). */
+export const POINT_OBJECT_STATE_PDU_LENGTH = 88;

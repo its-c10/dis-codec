@@ -27,7 +27,8 @@ export interface BeamDataGroup {
 
 /** Beam data record (repeats M_i times per emitter system). */
 export interface BeamData {
-  beamDataLength: number;
+  /** Length in octets of beam data (beamNumber through beamStatus). Set automatically during encode. */
+  beamDataLength?: number;
   beamNumber: number;
   beamParameterIndex: number;
   fundamentalParameterData: FundamentalParameterData;
@@ -54,7 +55,8 @@ export interface Location {
 
 /** One emitter system: fixed fields plus M beams. */
 export interface EmitterSystemData {
-  systemDataLength: number;
+  /** Length in octets of emitter system data (numberOfBeams through beams). Set automatically during encode. */
+  systemDataLength?: number;
   numberOfBeams: number;
   padding: number;
   emitterSystem: EmitterSystemRecord;
@@ -136,7 +138,8 @@ function decodeBeamData(reader: BinaryReader): BeamData {
 }
 
 function encodeBeamData(writer: BinaryWriter, beam: BeamData): void {
-  writer.writeUint8(beam.beamDataLength);
+  const lengthOffset = writer.getOffset();
+  writer.writeUint8(0); // placeholder; patched below
   writer.writeUint8(beam.beamNumber);
   writer.writeUint16(beam.beamParameterIndex);
   encodeFundamentalParameterData(writer, beam.fundamentalParameterData);
@@ -145,6 +148,7 @@ function encodeBeamData(writer: BinaryWriter, beam: BeamData): void {
   writer.writeUint8(beam.numberOfTargets);
   writer.writeUint8(beam.highDensityTrackJam);
   writer.writeUint8(beam.beamStatus);
+  writer.patchUint8(lengthOffset, writer.getOffset() - lengthOffset - 1);
 }
 
 function decodeEmitterSystemData(reader: BinaryReader): EmitterSystemData {
@@ -179,7 +183,8 @@ function encodeEmitterSystemData(
   writer: BinaryWriter,
   sys: EmitterSystemData
 ): void {
-  writer.writeUint8(sys.systemDataLength);
+  const lengthOffset = writer.getOffset();
+  writer.writeUint8(0); // placeholder; patched below
   writer.writeUint8(sys.numberOfBeams);
   writer.writeUint16(sys.padding);
   writer.writeUint16(sys.emitterSystem.emitterName);
@@ -191,6 +196,7 @@ function encodeEmitterSystemData(
   for (const beam of sys.beams) {
     encodeBeamData(writer, beam);
   }
+  writer.patchUint8(lengthOffset, writer.getOffset() - lengthOffset - 1);
 }
 
 export function decodeElectromagneticEmissionPdu(

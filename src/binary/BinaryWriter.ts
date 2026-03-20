@@ -21,6 +21,16 @@ export class BinaryWriter {
     return out;
   }
 
+  /** Overwrite a uint8 at the given offset (does not advance write position). Used to patch data length fields. */
+  patchUint8(offset: number, value: number): void {
+    if (offset < 0 || offset + 1 > this.offset) {
+      throw new RangeError(
+        `BinaryWriter.patchUint8: offset ${offset} out of range [0, ${this.offset - 1}]`
+      );
+    }
+    this.view.setUint8(offset, value);
+  }
+
   /** Overwrite a uint16 at the given offset (does not advance write position). Used to patch PDU length. */
   patchUint16(offset: number, value: number): void {
     if (offset < 0 || offset + 2 > this.offset) {
