@@ -75,8 +75,13 @@ if (header.pduType === dis7.PDU_TYPE_ENTITY_STATE) {
 | Stop/Freeze | `encodeStopFreezePdu` / `decodeStopFreezePdu` | 40 bytes |
 | Electromagnetic Emission | `encodeElectromagneticEmissionPdu` / `decodeElectromagneticEmissionPdu` | Variable length |
 | Transmitter | `encodeTransmitterPdu` / `decodeTransmitterPdu` | Variable length |
+| Point Object State | `encodePointObjectStatePdu` / `decodePointObjectStatePdu` | 88 bytes |
 
 Constants for PDU types, protocol families, and fixed lengths are available on `dis7` (for example `dis7.PDU_TYPE_ENTITY_STATE` and `dis7.CREATE_ENTITY_PDU_LENGTH`).
+
+### Data length fields
+
+PDUs such as Electromagnetic Emission and Transmitter include length-in-octets fields (`beamDataLength`, `systemDataLength`, `recordLength`, `lengthOfModulationParameters`, etc.). These are **computed and written automatically** during encode—you do not need to set them. The encoder writes a placeholder, encodes the payload, then patches the correct byte counts retroactively. When decoding, these fields are read from the wire and included in the returned object.
 
 ## Requirements
 
