@@ -25,7 +25,6 @@ dis7.encodeCreateEntityPdu(writer, {
     pduType: dis7.PDU_TYPE_CREATE_ENTITY,
     protocolFamily: dis7.PROTOCOL_FAMILY_SIMULATION_MANAGEMENT,
     timestamp: 0,
-    length: 0, // ignored; encoder sets correct length automatically
     pduStatus: 0,
     padding: 0,
   },
@@ -81,7 +80,7 @@ Constants for PDU types, protocol families, and fixed lengths are available on `
 
 ### Data length fields
 
-PDUs such as Electromagnetic Emission and Transmitter include length-in-octets fields (`beamDataLength`, `systemDataLength`, `recordLength`, `lengthOfModulationParameters`, etc.). These are **computed and written automatically** during encode—you do not need to set them. The encoder writes a placeholder, encodes the payload, then patches the correct byte counts retroactively. When decoding, these fields are read from the wire and included in the returned object.
+PDUs such as Electromagnetic Emission and Transmitter include length-in-octets fields (`beamDataLength`, `systemDataLength`, `recordLength`, `lengthOfModulationParameters`, etc.). The PDU header `length` field is also in this category. These are **computed and written automatically** during encode—you do not need to set them. The encoder writes a placeholder, encodes the payload, then patches the correct byte counts retroactively. When decoding, these fields are read from the wire and included in the returned object.
 
 ## Requirements
 

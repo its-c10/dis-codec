@@ -10,8 +10,8 @@ export interface PduHeader {
   pduType: number;
   protocolFamily: number;
   timestamp: number;
-  /** Total PDU size in bytes, including this header. */
-  length: number;
+  /** Total PDU size in bytes, including this header. Set automatically during encode. */
+  length?: number;
   pduStatus: number;
   padding: number;
 }
@@ -38,7 +38,7 @@ export function encodePduHeader(
   writer.writeUint8(header.pduType);
   writer.writeUint8(header.protocolFamily);
   writer.writeUint32(header.timestamp);
-  writer.writeUint16(header.length);
+  writer.writeUint16(header.length ?? 0); // placeholder; patched by encoder
   writer.writeUint8(header.pduStatus);
   writer.writeUint8(header.padding);
 }
