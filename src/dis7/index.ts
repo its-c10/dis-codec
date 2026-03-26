@@ -76,6 +76,7 @@ export {
 export {
   type TransmitterPdu,
   type RadioType,
+  type SpreadSpectrum,
   type ModulationType,
   type BeamAntennaPattern,
   type VariableTransmitterParameter,

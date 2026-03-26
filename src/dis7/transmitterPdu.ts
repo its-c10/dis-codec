@@ -37,9 +37,19 @@ export interface RadioType {
   extra: number;
 }
 
-/** Modulation type (64-bit record: 4 × 16-bit). */
+/**
+ * Spread spectrum field (16 bits). Table 90: bit 0 frequency hopping, bit 1 pseudo noise,
+ * bit 2 time hopping (each 8-bit enumeration, one bit used); bits 3–15 padding.
+ */
+export interface SpreadSpectrum {
+  frequencyHopping: number;
+  pseudoNoise: number;
+  timeHopping: number;
+}
+
+/** Modulation type (64-bit record: spread spectrum + 3 × 16-bit). */
 export interface ModulationType {
-  spreadSpectrum: number;
+  spreadSpectrum: SpreadSpectrum;
   majorModulation: number;
   detail: number;
   radioSystem: number;
@@ -162,9 +172,29 @@ function encodeVector3Float(writer: BinaryWriter, v: Vector3Float): void {
   writer.writeFloat32(v.z);
 }
 
+function decodeSpreadSpectrum(reader: BinaryReader): SpreadSpectrum {
+  const w = reader.readUint16();
+  return {
+    frequencyHopping: w & 1,
+    pseudoNoise: (w >> 1) & 1,
+    timeHopping: (w >> 2) & 1,
+  };
+}
+
+function encodeSpreadSpectrum(
+  writer: BinaryWriter,
+  s: SpreadSpectrum
+): void {
+  const w =
+    (s.frequencyHopping & 1) |
+    ((s.pseudoNoise & 1) << 1) |
+    ((s.timeHopping & 1) << 2);
+  writer.writeUint16(w);
+}
+
 function decodeModulationType(reader: BinaryReader): ModulationType {
   return {
-    spreadSpectrum: reader.readUint16(),
+    spreadSpectrum: decodeSpreadSpectrum(reader),
     majorModulation: reader.readUint16(),
     detail: reader.readUint16(),
     radioSystem: reader.readUint16(),
@@ -175,7 +205,7 @@ function encodeModulationType(
   writer: BinaryWriter,
   m: ModulationType
 ): void {
-  writer.writeUint16(m.spreadSpectrum);
+  encodeSpreadSpectrum(writer, m.spreadSpectrum);
   writer.writeUint16(m.majorModulation);
   writer.writeUint16(m.detail);
   writer.writeUint16(m.radioSystem);

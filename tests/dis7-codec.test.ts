@@ -480,7 +480,11 @@ describe("DIS 7 Transmitter PDU", () => {
     transmitFrequencyBandwidth: 0,
     power: 0,
     modulationType: {
-      spreadSpectrum: 0,
+      spreadSpectrum: {
+        frequencyHopping: 0,
+        pseudoNoise: 0,
+        timeHopping: 0,
+      },
       majorModulation: 0,
       detail: 0,
       radioSystem: 0,
@@ -539,6 +543,27 @@ describe("DIS 7 Transmitter PDU", () => {
       lengthOfModulationParameters: 2, // computed from modulationParameters during encode
       header: { ...pdu.header, length: w.getOffset() },
     });
+  });
+
+  it("packs spread spectrum field (Table 90) into bits 0–2", () => {
+    const pdu: dis7.TransmitterPdu = {
+      ...sampleTransmitterPdu,
+      modulationType: {
+        ...sampleTransmitterPdu.modulationType,
+        spreadSpectrum: {
+          frequencyHopping: 1,
+          pseudoNoise: 0,
+          timeHopping: 1,
+        },
+      },
+    };
+    const w = new BinaryWriter();
+    dis7.encodeTransmitterPdu(w, pdu);
+    const r = new BinaryReader(w.toArrayBuffer());
+    const decoded = dis7.decodeTransmitterPdu(r);
+    expect(decoded.modulationType.spreadSpectrum).toEqual(
+      pdu.modulationType.spreadSpectrum
+    );
   });
 });
 
