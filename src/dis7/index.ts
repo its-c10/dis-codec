@@ -39,6 +39,7 @@ export {
   type DeadReckoningParameters,
   type EntityMarking,
   type VariableParameter,
+  entityMarkingStringToAsciiBytes,
   decodeEntityStatePdu,
   encodeEntityStatePdu,
 } from "./entityStatePdu.js";
