@@ -521,7 +521,7 @@ describe("DIS 7 Transmitter PDU", () => {
     relativeAntennaLocation: { x: 0, y: 0, z: 0 },
     antennaPatternType: 0,
     antennaPatternLength: dis7.BEAM_ANTENNA_PATTERN_LENGTH,
-    frequency: 0n,
+    frequency: 0,
     transmitFrequencyBandwidth: 0,
     power: 0,
     modulationType: {
