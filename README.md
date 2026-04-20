@@ -78,6 +78,28 @@ if (header.pduType === dis7.PDU_TYPE_ENTITY_STATE) {
 
 Constants for PDU types, protocol families, and fixed lengths are available on `dis7` (for example `dis7.PDU_TYPE_ENTITY_STATE` and `dis7.CREATE_ENTITY_PDU_LENGTH`).
 
+### Byte array requirements (important)
+
+Some PDU fields are fixed-size byte arrays. These fields are public `number[]` values (JSON-safe), but they **must** be the exact required length when encoding:
+
+- `entityMarking.characters`: **11 bytes**
+- `deadReckoningParameters.otherParameters`: **15 bytes**
+- `variableParameters[].recordSpecific`: **15 bytes**
+
+For Entity Marking text, use the helper to create a valid 11-byte ASCII array:
+
+```ts
+const pdu: dis7.EntityStatePdu = {
+  // ...
+  entityMarking: {
+    characterSet: 1,
+    characters: dis7.entityMarkingStringToAsciiBytes("EAGLE11"),
+  },
+};
+```
+
+The encoder validates these lengths and throws a `RangeError` if they are incorrect.
+
 ### Data length fields
 
 PDUs such as Electromagnetic Emission and Transmitter include length-in-octets fields (`beamDataLength`, `systemDataLength`, `recordLength`, `lengthOfModulationParameters`, etc.). The PDU header `length` field is also in this category. These are **computed and written automatically** during encode—you do not need to set them. The encoder writes a placeholder, encodes the payload, then patches the correct byte counts retroactively. When decoding, these fields are read from the wire and included in the returned object.

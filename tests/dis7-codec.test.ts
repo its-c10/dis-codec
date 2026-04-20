@@ -343,8 +343,8 @@ describe("DIS 7 Electromagnetic Emission PDU", () => {
 });
 
 describe("DIS 7 Entity State PDU", () => {
-  const zero15 = new Uint8Array(15);
-  const zero11 = new Uint8Array(11);
+  const zero15 = new Array<number>(15).fill(0);
+  const zero11 = new Array<number>(11).fill(0);
 
   const sampleEntityStatePdu: dis7.EntityStatePdu = {
     header: {
@@ -424,7 +424,7 @@ describe("DIS 7 Entity State PDU", () => {
       variableParameters: [
         {
           recordType: 1,
-          recordSpecific: new Uint8Array(15).fill(0),
+          recordSpecific: new Array<number>(15).fill(0),
         },
       ],
     };
@@ -440,6 +440,51 @@ describe("DIS 7 Entity State PDU", () => {
       header: { ...pdu.header, length: expectedLength },
     });
     expect(r.getOffset()).toBe(expectedLength);
+  });
+
+  it("supports JSON stringify/parse with byte arrays", () => {
+    const pdu: dis7.EntityStatePdu = {
+      ...sampleEntityStatePdu,
+      deadReckoningParameters: {
+        ...sampleEntityStatePdu.deadReckoningParameters,
+        otherParameters: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+      },
+      entityMarking: {
+        characterSet: 1,
+        characters: dis7.entityMarkingStringToAsciiBytes("TEST"),
+      },
+      numberOfVariableParameterRecords: 1,
+      variableParameters: [
+        {
+          recordType: 1,
+          recordSpecific: [15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1],
+        },
+      ],
+    };
+
+    const reparsed = JSON.parse(JSON.stringify(pdu)) as dis7.EntityStatePdu;
+
+    expect(Array.isArray(reparsed.deadReckoningParameters.otherParameters)).toBe(
+      true
+    );
+    expect(Array.isArray(reparsed.entityMarking.characters)).toBe(true);
+    expect(Array.isArray(reparsed.variableParameters[0].recordSpecific)).toBe(
+      true
+    );
+    expect(reparsed.deadReckoningParameters.otherParameters).toEqual(
+      pdu.deadReckoningParameters.otherParameters
+    );
+    expect(reparsed.entityMarking.characters).toEqual(pdu.entityMarking.characters);
+    expect(reparsed.variableParameters[0].recordSpecific).toEqual(
+      pdu.variableParameters[0].recordSpecific
+    );
+
+    const w = new BinaryWriter();
+    dis7.encodeEntityStatePdu(w, reparsed);
+    expect(w.getOffset()).toBe(
+      dis7.ENTITY_STATE_PDU_FIXED_LENGTH +
+        dis7.ENTITY_STATE_VARIABLE_PARAMETER_RECORD_LENGTH
+    );
   });
 });
 
@@ -476,7 +521,7 @@ describe("DIS 7 Transmitter PDU", () => {
     relativeAntennaLocation: { x: 0, y: 0, z: 0 },
     antennaPatternType: 0,
     antennaPatternLength: dis7.BEAM_ANTENNA_PATTERN_LENGTH,
-    frequency: 0n,
+    frequency: 0,
     transmitFrequencyBandwidth: 0,
     power: 0,
     modulationType: {
@@ -491,7 +536,7 @@ describe("DIS 7 Transmitter PDU", () => {
     },
     cryptoSystem: 0,
     cryptoKeyId: 0,
-    modulationParameters: new Uint8Array(0),
+    modulationParameters: [],
     antennaPattern: {
       beamDirection: { psi: 0, theta: 0, phi: 0 },
       azimuthBeamwidth: 0,
@@ -532,7 +577,7 @@ describe("DIS 7 Transmitter PDU", () => {
   it("round-trips TransmitterPdu with modulation data", () => {
     const pdu: dis7.TransmitterPdu = {
       ...sampleTransmitterPdu,
-      modulationParameters: new Uint8Array([0xab, 0xcd]),
+      modulationParameters: [0xab, 0xcd],
     };
     const w = new BinaryWriter();
     dis7.encodeTransmitterPdu(w, pdu);

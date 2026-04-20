@@ -4,6 +4,11 @@ import type { EntityId } from "../core/entityId.js";
 import { decodeEntityId, encodeEntityId } from "../core/entityId.js";
 import { decodePduHeader, encodePduHeader } from "./pduHeader.js";
 import type { PduHeader } from "./pduHeader.js";
+import {
+  assertByteArrayValues,
+  assertCountMatches,
+  assertUint8Range,
+} from "./validation.js";
 
 /** Antenna location (X, Y, Z float64). */
 export interface Vector3Double {
@@ -79,7 +84,7 @@ export interface VariableTransmitterParameter {
   /** Record length in octets (6 + data.length). Set automatically during encode. */
   recordLength?: number;
   /** Record-specific fields + padding (recordLength - 6 octets). */
-  data: Uint8Array;
+  data: number[];
 }
 
 /**
@@ -104,8 +109,8 @@ export interface TransmitterPdu {
   antennaPatternType: number;
   /** Antenna pattern length in octets (A). */
   antennaPatternLength: number;
-  /** 64-bit unsigned integer (e.g. frequency in Hz). */
-  frequency: bigint;
+  /** 64-bit unsigned integer represented as number (safe integer range required). */
+  frequency: number;
   transmitFrequencyBandwidth: number;
   power: number;
   modulationType: ModulationType;
@@ -116,7 +121,7 @@ export interface TransmitterPdu {
   /** Length of modulation parameters in octets (M). Set automatically during encode. */
   lengthOfModulationParameters?: number;
   /** Modulation parameters (M octets). */
-  modulationParameters: Uint8Array;
+  modulationParameters: number[];
   /** Antenna pattern (e.g. Beam Antenna Pattern, Table 31). */
   antennaPattern: BeamAntennaPattern;
   variableTransmitterParameters: VariableTransmitterParameter[];
@@ -132,6 +137,30 @@ function decodeRadioType(reader: BinaryReader): RadioType {
     specific: reader.readUint8(),
     extra: reader.readUint8(),
   };
+}
+
+function decodeUint64AsNumber(reader: BinaryReader, fieldName: string): number {
+  const value = reader.readUint64();
+  const asNumber = Number(value);
+  if (!Number.isSafeInteger(asNumber)) {
+    throw new RangeError(
+      `${fieldName} exceeds Number.MAX_SAFE_INTEGER and cannot be represented safely as number`
+    );
+  }
+  return asNumber;
+}
+
+function encodeUint64FromNumber(
+  writer: BinaryWriter,
+  fieldName: string,
+  value: number
+): void {
+  if (!Number.isSafeInteger(value) || value < 0) {
+    throw new RangeError(
+      `${fieldName} must be a non-negative safe integer, got ${value}`
+    );
+  }
+  writer.writeUint64(BigInt(value));
 }
 
 function encodeRadioType(writer: BinaryWriter, r: RadioType): void {
@@ -261,7 +290,7 @@ function decodeVariableTransmitterParameter(
   const recordType = reader.readUint32();
   const recordLength = reader.readUint16();
   const dataLength = recordLength - 6;
-  const data = dataLength > 0 ? reader.readBytes(dataLength) : new Uint8Array(0);
+  const data = dataLength > 0 ? Array.from(reader.readBytes(dataLength)) : [];
   return {
     recordType,
     recordLength,
@@ -273,11 +302,11 @@ function encodeVariableTransmitterParameter(
   writer: BinaryWriter,
   v: VariableTransmitterParameter
 ): void {
-  const recordLength = 6 + v.data.byteLength;
+  const recordLength = 6 + v.data.length;
   writer.writeUint32(v.recordType);
   writer.writeUint16(recordLength);
   if (v.data.length > 0) {
-    writer.writeBytes(v.data);
+    writer.writeBytes(Uint8Array.from(v.data));
   }
 }
 
@@ -293,7 +322,7 @@ export function decodeTransmitterPdu(reader: BinaryReader): TransmitterPdu {
   const relativeAntennaLocation = decodeVector3Float(reader);
   const antennaPatternType = reader.readUint16();
   const antennaPatternLength = reader.readUint16();
-  const frequency = reader.readUint64();
+  const frequency = decodeUint64AsNumber(reader, "frequency");
   const transmitFrequencyBandwidth = reader.readFloat32();
   const power = reader.readFloat32();
   const modulationType = decodeModulationType(reader);
@@ -304,8 +333,8 @@ export function decodeTransmitterPdu(reader: BinaryReader): TransmitterPdu {
   reader.readUint16(); // padding 16 bits
   const modulationParameters =
     lengthOfModulationParameters > 0
-      ? reader.readBytes(lengthOfModulationParameters)
-      : new Uint8Array(0);
+      ? Array.from(reader.readBytes(lengthOfModulationParameters))
+      : [];
   const antennaPattern = decodeBeamAntennaPattern(reader);
   const variableTransmitterParameters: VariableTransmitterParameter[] = [];
   for (let i = 0; i < numberOfVariableTransmitterParameterRecords; i++) {
@@ -342,6 +371,27 @@ export function encodeTransmitterPdu(
   writer: BinaryWriter,
   pdu: TransmitterPdu
 ): void {
+  assertCountMatches(
+    "numberOfVariableTransmitterParameterRecords",
+    pdu.numberOfVariableTransmitterParameterRecords,
+    pdu.variableTransmitterParameters.length
+  );
+  if (pdu.antennaPatternLength !== BEAM_ANTENNA_PATTERN_LENGTH) {
+    throw new RangeError(
+      `antennaPatternLength must be ${BEAM_ANTENNA_PATTERN_LENGTH} for Beam Antenna Pattern, got ${pdu.antennaPatternLength}`
+    );
+  }
+  assertUint8Range(
+    "modulationParameters.length",
+    pdu.modulationParameters.length
+  );
+  assertByteArrayValues("modulationParameters", pdu.modulationParameters);
+  for (let i = 0; i < pdu.variableTransmitterParameters.length; i++) {
+    assertByteArrayValues(
+      `variableTransmitterParameters[${i}].data`,
+      pdu.variableTransmitterParameters[i].data
+    );
+  }
   encodePduHeader(writer, pdu.header);
   encodeEntityId(writer, pdu.radioReferenceId);
   writer.writeUint16(pdu.radioNumber);
@@ -353,16 +403,16 @@ export function encodeTransmitterPdu(
   encodeVector3Float(writer, pdu.relativeAntennaLocation);
   writer.writeUint16(pdu.antennaPatternType);
   writer.writeUint16(pdu.antennaPatternLength);
-  writer.writeUint64(pdu.frequency);
+  encodeUint64FromNumber(writer, "frequency", pdu.frequency);
   writer.writeFloat32(pdu.transmitFrequencyBandwidth);
   writer.writeFloat32(pdu.power);
   encodeModulationType(writer, pdu.modulationType);
   writer.writeUint16(pdu.cryptoSystem);
   writer.writeUint16(pdu.cryptoKeyId);
-  writer.writeUint8(pdu.modulationParameters.byteLength);
+  writer.writeUint8(pdu.modulationParameters.length);
   writer.writeUint8(0); // padding
   writer.writeUint16(0); // padding
-  writer.writeBytes(pdu.modulationParameters);
+  writer.writeBytes(Uint8Array.from(pdu.modulationParameters));
   encodeBeamAntennaPattern(writer, pdu.antennaPattern);
   for (const v of pdu.variableTransmitterParameters) {
     encodeVariableTransmitterParameter(writer, v);

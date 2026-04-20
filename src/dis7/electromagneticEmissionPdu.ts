@@ -6,6 +6,7 @@ import type { EventId } from "../core/eventId.js";
 import { decodeEventId, encodeEventId } from "../core/eventId.js";
 import { decodePduHeader, encodePduHeader } from "./pduHeader.js";
 import type { PduHeader } from "./pduHeader.js";
+import { assertCountMatches, assertUint8Range } from "./validation.js";
 
 /** Fundamental parameter data for one beam (five float32s). */
 export interface FundamentalParameterData {
@@ -183,6 +184,8 @@ function encodeEmitterSystemData(
   writer: BinaryWriter,
   sys: EmitterSystemData
 ): void {
+  assertCountMatches("numberOfBeams", sys.numberOfBeams, sys.beams.length);
+  assertUint8Range("numberOfBeams", sys.numberOfBeams);
   const lengthOffset = writer.getOffset();
   writer.writeUint8(0); // placeholder; patched below
   writer.writeUint8(sys.numberOfBeams);
@@ -227,6 +230,8 @@ export function encodeElectromagneticEmissionPdu(
   writer: BinaryWriter,
   pdu: ElectromagneticEmissionPdu
 ): void {
+  assertCountMatches("numberOfSystems", pdu.numberOfSystems, pdu.emitterSystems.length);
+  assertUint8Range("numberOfSystems", pdu.numberOfSystems);
   encodePduHeader(writer, pdu.header);
   encodeEntityId(writer, pdu.emittingEntityId);
   encodeEventId(writer, pdu.eventId);

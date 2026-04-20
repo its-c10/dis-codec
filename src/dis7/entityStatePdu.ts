@@ -4,6 +4,11 @@ import type { EntityId } from "../core/entityId.js";
 import { decodeEntityId, encodeEntityId } from "../core/entityId.js";
 import { decodePduHeader, encodePduHeader } from "./pduHeader.js";
 import type { PduHeader } from "./pduHeader.js";
+import {
+  assertByteArrayLength,
+  assertByteArrayValues,
+  assertCountMatches,
+} from "./validation.js";
 
 /** Entity type (64 bits): kind, domain, country, category, subcategory, specific, extra. */
 export interface EntityType {
@@ -42,7 +47,7 @@ export interface DeadReckoningParameters {
   /** 8-bit enumeration. */
   deadReckoningAlgorithm: number;
   /** Other parameters, 120 bits (15 bytes). */
-  otherParameters: Uint8Array;
+  otherParameters: number[];
   entityLinearAcceleration: Vector3Float;
   entityAngularVelocity: Vector3Float;
 }
@@ -52,7 +57,7 @@ export interface EntityMarking {
   /** 8-bit enumeration. */
   characterSet: number;
   /** 11 bytes (88 bits). */
-  characters: Uint8Array;
+  characters: number[];
 }
 
 /** Variable parameter record (128 bits). */
@@ -60,7 +65,7 @@ export interface VariableParameter {
   /** 8-bit enumeration. */
   recordType: number;
   /** Record-specific fields, 120 bits (15 bytes). */
-  recordSpecific: Uint8Array;
+  recordSpecific: number[];
 }
 
 /**
@@ -90,6 +95,24 @@ export interface EntityStatePdu {
 const DEAD_RECKONING_OTHER_BYTES = 15;
 const ENTITY_MARKING_CHARACTERS_BYTES = 11;
 const VARIABLE_PARAM_RECORD_SPECIFIC_BYTES = 15;
+
+function toUint8Array(data: number[]): Uint8Array {
+  return Uint8Array.from(data);
+}
+
+/**
+ * Converts a string to fixed-length ASCII bytes for Entity Marking characters.
+ * Non-ASCII characters are replaced with '?' (0x3f), and output is zero-padded.
+ */
+export function entityMarkingStringToAsciiBytes(text: string): number[] {
+  const bytes = new Array<number>(ENTITY_MARKING_CHARACTERS_BYTES).fill(0);
+  const limit = Math.min(text.length, ENTITY_MARKING_CHARACTERS_BYTES);
+  for (let i = 0; i < limit; i++) {
+    const code = text.charCodeAt(i);
+    bytes[i] = code <= 0x7f ? code : 0x3f;
+  }
+  return bytes;
+}
 
 function decodeEntityType(reader: BinaryReader): EntityType {
   return {
@@ -160,7 +183,7 @@ function decodeDeadReckoningParameters(
 ): DeadReckoningParameters {
   return {
     deadReckoningAlgorithm: reader.readUint8(),
-    otherParameters: reader.readBytes(DEAD_RECKONING_OTHER_BYTES),
+    otherParameters: Array.from(reader.readBytes(DEAD_RECKONING_OTHER_BYTES)),
     entityLinearAcceleration: decodeVector3Float(reader),
     entityAngularVelocity: decodeVector3Float(reader),
   };
@@ -171,7 +194,7 @@ function encodeDeadReckoningParameters(
   d: DeadReckoningParameters
 ): void {
   writer.writeUint8(d.deadReckoningAlgorithm);
-  writer.writeBytes(d.otherParameters);
+  writer.writeBytes(toUint8Array(d.otherParameters));
   encodeVector3Float(writer, d.entityLinearAcceleration);
   encodeVector3Float(writer, d.entityAngularVelocity);
 }
@@ -179,7 +202,7 @@ function encodeDeadReckoningParameters(
 function decodeEntityMarking(reader: BinaryReader): EntityMarking {
   return {
     characterSet: reader.readUint8(),
-    characters: reader.readBytes(ENTITY_MARKING_CHARACTERS_BYTES),
+    characters: Array.from(reader.readBytes(ENTITY_MARKING_CHARACTERS_BYTES)),
   };
 }
 
@@ -188,13 +211,15 @@ function encodeEntityMarking(
   m: EntityMarking
 ): void {
   writer.writeUint8(m.characterSet);
-  writer.writeBytes(m.characters);
+  writer.writeBytes(toUint8Array(m.characters));
 }
 
 function decodeVariableParameter(reader: BinaryReader): VariableParameter {
   return {
     recordType: reader.readUint8(),
-    recordSpecific: reader.readBytes(VARIABLE_PARAM_RECORD_SPECIFIC_BYTES),
+    recordSpecific: Array.from(
+      reader.readBytes(VARIABLE_PARAM_RECORD_SPECIFIC_BYTES)
+    ),
   };
 }
 
@@ -203,7 +228,7 @@ function encodeVariableParameter(
   v: VariableParameter
 ): void {
   writer.writeUint8(v.recordType);
-  writer.writeBytes(v.recordSpecific);
+  writer.writeBytes(toUint8Array(v.recordSpecific));
 }
 
 export function decodeEntityStatePdu(reader: BinaryReader): EntityStatePdu {
@@ -246,6 +271,37 @@ export function encodeEntityStatePdu(
   writer: BinaryWriter,
   pdu: EntityStatePdu
 ): void {
+  assertCountMatches(
+    "numberOfVariableParameterRecords",
+    pdu.numberOfVariableParameterRecords,
+    pdu.variableParameters.length
+  );
+  assertByteArrayLength(
+    "deadReckoningParameters.otherParameters",
+    pdu.deadReckoningParameters.otherParameters,
+    DEAD_RECKONING_OTHER_BYTES
+  );
+  assertByteArrayValues(
+    "deadReckoningParameters.otherParameters",
+    pdu.deadReckoningParameters.otherParameters
+  );
+  assertByteArrayLength(
+    "entityMarking.characters",
+    pdu.entityMarking.characters,
+    ENTITY_MARKING_CHARACTERS_BYTES
+  );
+  assertByteArrayValues("entityMarking.characters", pdu.entityMarking.characters);
+  for (let i = 0; i < pdu.variableParameters.length; i++) {
+    assertByteArrayLength(
+      `variableParameters[${i}].recordSpecific`,
+      pdu.variableParameters[i].recordSpecific,
+      VARIABLE_PARAM_RECORD_SPECIFIC_BYTES
+    );
+    assertByteArrayValues(
+      `variableParameters[${i}].recordSpecific`,
+      pdu.variableParameters[i].recordSpecific
+    );
+  }
   encodePduHeader(writer, pdu.header);
   encodeEntityId(writer, pdu.entityId);
   writer.writeUint8(pdu.forceId);
