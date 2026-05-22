@@ -68,6 +68,7 @@ if (header.pduType === dis7.PDU_TYPE_ENTITY_STATE) {
 | PDU | Encode / Decode | Notes |
 |-----|-----------------|-------|
 | Entity State | `encodeEntityStatePdu` / `decodeEntityStatePdu` | Variable length |
+| Fire | `encodeFirePdu` / `decodeFirePdu` | 96 bytes; pass `{ descriptorVariant: "expendable" }` when decoding expendable descriptors |
 | Create Entity | `encodeCreateEntityPdu` / `decodeCreateEntityPdu` | 28 bytes |
 | Remove Entity | `encodeRemoveEntityPdu` / `decodeRemoveEntityPdu` | 28 bytes |
 | Start/Resume | `encodeStartResumePdu` / `decodeStartResumePdu` | 44 bytes |

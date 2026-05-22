@@ -4,9 +4,11 @@
 export {
   PROTOCOL_VERSION,
   PROTOCOL_FAMILY_ENTITY_INFORMATION,
+  PROTOCOL_FAMILY_WARFARE,
   PROTOCOL_FAMILY_SIMULATION_MANAGEMENT,
   PROTOCOL_FAMILY_ELECTROMAGNETIC_EMISSION,
   PDU_TYPE_ENTITY_STATE,
+  PDU_TYPE_FIRE,
   PDU_TYPE_CREATE_ENTITY,
   PDU_TYPE_REMOVE_ENTITY,
   PDU_TYPE_START_RESUME,
@@ -24,6 +26,7 @@ export {
   ENTITY_STATE_VARIABLE_PARAMETER_RECORD_LENGTH,
   TRANSMITTER_PDU_FIXED_LENGTH,
   POINT_OBJECT_STATE_PDU_LENGTH,
+  FIRE_PDU_LENGTH,
 } from "./constants.js";
 export {
   type PduHeader,
@@ -91,3 +94,12 @@ export {
   decodePointObjectStatePdu,
   encodePointObjectStatePdu,
 } from "./pointObjectStatePdu.js";
+export {
+  type FirePdu,
+  type FireDescriptor,
+  type MunitionDescriptor,
+  type ExpendableDescriptor,
+  type DecodeFirePduOptions,
+  decodeFirePdu,
+  encodeFirePdu,
+} from "./firePdu.js";

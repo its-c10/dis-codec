@@ -7,11 +7,17 @@ export const PROTOCOL_VERSION = 7;
 /** Entity Information protocol family. */
 export const PROTOCOL_FAMILY_ENTITY_INFORMATION = 1;
 
+/** Warfare protocol family. */
+export const PROTOCOL_FAMILY_WARFARE = 2;
+
 /** Simulation Management protocol family. */
 export const PROTOCOL_FAMILY_SIMULATION_MANAGEMENT = 5;
 
 /** PDU type: Entity State. */
 export const PDU_TYPE_ENTITY_STATE = 1;
+
+/** PDU type: Fire. */
+export const PDU_TYPE_FIRE = 2;
 
 /** PDU type: Create Entity. */
 export const PDU_TYPE_CREATE_ENTITY = 11;
@@ -66,3 +72,6 @@ export const TRANSMITTER_PDU_FIXED_LENGTH = 104;
 
 /** Point Object State PDU total length on wire (bytes). */
 export const POINT_OBJECT_STATE_PDU_LENGTH = 88;
+
+/** Fire PDU total length on wire (bytes). */
+export const FIRE_PDU_LENGTH = 96;
