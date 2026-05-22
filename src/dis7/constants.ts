@@ -19,6 +19,9 @@ export const PDU_TYPE_ENTITY_STATE = 1;
 /** PDU type: Fire. */
 export const PDU_TYPE_FIRE = 2;
 
+/** PDU type: Detonation. */
+export const PDU_TYPE_DETONATION = 3;
+
 /** PDU type: Create Entity. */
 export const PDU_TYPE_CREATE_ENTITY = 11;
 
@@ -75,3 +78,6 @@ export const POINT_OBJECT_STATE_PDU_LENGTH = 88;
 
 /** Fire PDU total length on wire (bytes). */
 export const FIRE_PDU_LENGTH = 96;
+
+/** Detonation PDU fixed portion in bytes (832 bits). Total = 104 + 16*N. */
+export const DETONATION_PDU_FIXED_LENGTH = 104;

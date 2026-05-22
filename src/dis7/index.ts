@@ -9,6 +9,7 @@ export {
   PROTOCOL_FAMILY_ELECTROMAGNETIC_EMISSION,
   PDU_TYPE_ENTITY_STATE,
   PDU_TYPE_FIRE,
+  PDU_TYPE_DETONATION,
   PDU_TYPE_CREATE_ENTITY,
   PDU_TYPE_REMOVE_ENTITY,
   PDU_TYPE_START_RESUME,
@@ -27,6 +28,7 @@ export {
   TRANSMITTER_PDU_FIXED_LENGTH,
   POINT_OBJECT_STATE_PDU_LENGTH,
   FIRE_PDU_LENGTH,
+  DETONATION_PDU_FIXED_LENGTH,
 } from "./constants.js";
 export {
   type PduHeader,
@@ -95,11 +97,23 @@ export {
   encodePointObjectStatePdu,
 } from "./pointObjectStatePdu.js";
 export {
-  type FirePdu,
-  type FireDescriptor,
   type MunitionDescriptor,
   type ExpendableDescriptor,
+  type ExplosionDescriptor,
+  EXPENDABLE_DESCRIPTOR_PADDING_BYTES,
+} from "./descriptors.js";
+export {
+  type FirePdu,
+  type FireDescriptor,
   type DecodeFirePduOptions,
   decodeFirePdu,
   encodeFirePdu,
 } from "./firePdu.js";
+export {
+  type DetonationPdu,
+  type DetonationDescriptor,
+  type DecodeDetonationPduOptions,
+  detonationPduLength,
+  decodeDetonationPdu,
+  encodeDetonationPdu,
+} from "./detonationPdu.js";

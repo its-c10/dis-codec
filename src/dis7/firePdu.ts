@@ -4,35 +4,24 @@ import type { EntityId } from "../core/entityId.js";
 import { decodeEntityId, encodeEntityId } from "../core/entityId.js";
 import type { EventId } from "../core/eventId.js";
 import { decodeEventId, encodeEventId } from "../core/eventId.js";
-import type { EntityType, Vector3Double, Vector3Float } from "./entityStatePdu.js";
+import type { Vector3Double, Vector3Float } from "./entityStatePdu.js";
+import {
+  decodeFireDescriptor,
+  encodeFireDescriptor,
+  type ExpendableDescriptor,
+  type FireDescriptor,
+  type MunitionDescriptor,
+  EXPENDABLE_DESCRIPTOR_PADDING_BYTES,
+} from "./descriptors.js";
 import { decodePduHeader, encodePduHeader } from "./pduHeader.js";
 import type { PduHeader } from "./pduHeader.js";
 
-/** Munition descriptor (128 bits). IEEE 6.2.19.2. */
-export interface MunitionDescriptor {
-  munitionType: EntityType;
-  /** 16-bit enumeration */
-  warhead: number;
-  /** 16-bit enumeration */
-  fuse: number;
-  quantity: number;
-  rate: number;
-}
-
-/** Expendable descriptor (128 bits). IEEE 6.2.19.4. */
-export interface ExpendableDescriptor {
-  expendableType: EntityType;
-  /** 16-bit enumeration */
-  expendable: number;
-  /** 16 bits unused */
-  padding: number;
-  /** 32 bits unused */
-  padding2: number;
-}
-
-export type FireDescriptor =
-  | { variant: "munition"; munition: MunitionDescriptor }
-  | { variant: "expendable"; expendable: ExpendableDescriptor };
+export type {
+  MunitionDescriptor,
+  ExpendableDescriptor,
+  FireDescriptor,
+} from "./descriptors.js";
+export { EXPENDABLE_DESCRIPTOR_PADDING_BYTES } from "./descriptors.js";
 
 /**
  * Fire PDU (768 bits). Tables 139, 7.3.2.
@@ -50,28 +39,6 @@ export interface FirePdu {
   velocity: Vector3Float;
   /** Range in meters (32-bit float). Zero if unknown. */
   range: number;
-}
-
-function decodeEntityType(reader: BinaryReader): EntityType {
-  return {
-    kind: reader.readUint8(),
-    domain: reader.readUint8(),
-    country: reader.readUint16(),
-    category: reader.readUint8(),
-    subcategory: reader.readUint8(),
-    specific: reader.readUint8(),
-    extra: reader.readUint8(),
-  };
-}
-
-function encodeEntityType(writer: BinaryWriter, e: EntityType): void {
-  writer.writeUint8(e.kind);
-  writer.writeUint8(e.domain);
-  writer.writeUint16(e.country);
-  writer.writeUint8(e.category);
-  writer.writeUint8(e.subcategory);
-  writer.writeUint8(e.specific);
-  writer.writeUint8(e.extra);
 }
 
 function decodeVector3Double(reader: BinaryReader): Vector3Double {
@@ -100,64 +67,6 @@ function encodeVector3Float(writer: BinaryWriter, v: Vector3Float): void {
   writer.writeFloat32(v.x);
   writer.writeFloat32(v.y);
   writer.writeFloat32(v.z);
-}
-
-function decodeMunitionDescriptor(reader: BinaryReader): MunitionDescriptor {
-  return {
-    munitionType: decodeEntityType(reader),
-    warhead: reader.readUint16(),
-    fuse: reader.readUint16(),
-    quantity: reader.readUint16(),
-    rate: reader.readUint16(),
-  };
-}
-
-function encodeMunitionDescriptor(
-  writer: BinaryWriter,
-  d: MunitionDescriptor
-): void {
-  encodeEntityType(writer, d.munitionType);
-  writer.writeUint16(d.warhead);
-  writer.writeUint16(d.fuse);
-  writer.writeUint16(d.quantity);
-  writer.writeUint16(d.rate);
-}
-
-function decodeExpendableDescriptor(reader: BinaryReader): ExpendableDescriptor {
-  return {
-    expendableType: decodeEntityType(reader),
-    expendable: reader.readUint16(),
-    padding: reader.readUint16(),
-    padding2: reader.readUint32(),
-  };
-}
-
-function encodeExpendableDescriptor(
-  writer: BinaryWriter,
-  d: ExpendableDescriptor
-): void {
-  encodeEntityType(writer, d.expendableType);
-  writer.writeUint16(d.expendable);
-  writer.writeUint16(d.padding);
-  writer.writeUint32(d.padding2);
-}
-
-function decodeFireDescriptor(
-  reader: BinaryReader,
-  variant: FireDescriptor["variant"]
-): FireDescriptor {
-  if (variant === "expendable") {
-    return { variant: "expendable", expendable: decodeExpendableDescriptor(reader) };
-  }
-  return { variant: "munition", munition: decodeMunitionDescriptor(reader) };
-}
-
-function encodeFireDescriptor(writer: BinaryWriter, d: FireDescriptor): void {
-  if (d.variant === "munition") {
-    encodeMunitionDescriptor(writer, d.munition);
-  } else {
-    encodeExpendableDescriptor(writer, d.expendable);
-  }
 }
 
 export type DecodeFirePduOptions = {
