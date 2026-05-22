@@ -4,4 +4,5 @@ dist/
 .DS_Store
 .env
 .env.*
+IEEE 1278.1-2012 Spec.pdf
 !.env.example

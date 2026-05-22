@@ -162,6 +162,229 @@ describe("DIS 7 Stop/Freeze PDU", () => {
   });
 });
 
+describe("DIS 7 Fire PDU", () => {
+  const samplePdu: dis7.FirePdu = {
+    header: {
+      protocolVersion: dis7.PROTOCOL_VERSION,
+      exerciseId: 1,
+      pduType: dis7.PDU_TYPE_FIRE,
+      protocolFamily: dis7.PROTOCOL_FAMILY_WARFARE,
+      timestamp: 0x12345678,
+      length: dis7.FIRE_PDU_LENGTH,
+      pduStatus: 0,
+      padding: 0,
+    },
+    firingEntityId: {
+      simulationAddress: { site: 1, application: 2 },
+      entity: 100,
+    },
+    targetEntityId: {
+      simulationAddress: { site: 1, application: 2 },
+      entity: 200,
+    },
+    munitionExpendableEntityId: {
+      simulationAddress: { site: 1, application: 2 },
+      entity: 300,
+    },
+    eventId: {
+      simulationAddress: { site: 1, application: 2 },
+      event: 7,
+    },
+    fireMissionIndex: 42,
+    locationInWorldCoordinates: { x: 1000.5, y: -200.25, z: 50 },
+    descriptor: {
+      variant: "munition",
+      munition: {
+        munitionType: {
+          kind: 2,
+          domain: 1,
+          country: 225,
+          category: 1,
+          subcategory: 2,
+          specific: 3,
+          extra: 0,
+        },
+        warhead: 1000,
+        fuse: 2000,
+        quantity: 1,
+        rate: 0,
+      },
+    },
+    velocity: { x: 100, y: 0, z: -50 },
+    range: 5000,
+  };
+
+  it("encodes header with PDU type 2, family 2, length 96", () => {
+    const w = new BinaryWriter();
+    dis7.encodeFirePdu(w, samplePdu);
+    const u8 = new Uint8Array(w.toArrayBuffer());
+    expect(u8.length).toBe(96);
+    expect(u8[0]).toBe(7);
+    expect(u8[1]).toBe(1);
+    expect(u8[2]).toBe(2);
+    expect(u8[3]).toBe(2);
+    expect(u8[8]).toBe(0);
+    expect(u8[9]).toBe(96);
+  });
+
+  it("round-trips FirePdu with munition descriptor", () => {
+    const w = new BinaryWriter();
+    dis7.encodeFirePdu(w, samplePdu);
+    const r = new BinaryReader(w.toArrayBuffer());
+    expect(dis7.decodeFirePdu(r)).toEqual(samplePdu);
+    expect(r.getOffset()).toBe(96);
+  });
+
+  it("round-trips FirePdu with expendable descriptor", () => {
+    const expendablePdu: dis7.FirePdu = {
+      ...samplePdu,
+      descriptor: {
+        variant: "expendable",
+        expendable: {
+          expendableType: {
+            kind: 3,
+            domain: 0,
+            country: 0,
+            category: 0,
+            subcategory: 0,
+            specific: 0,
+            extra: 0,
+          },
+          padding: new Array(dis7.EXPENDABLE_DESCRIPTOR_PADDING_BYTES).fill(0),
+        },
+      },
+    };
+    const w = new BinaryWriter();
+    dis7.encodeFirePdu(w, expendablePdu);
+    const r = new BinaryReader(w.toArrayBuffer());
+    expect(
+      dis7.decodeFirePdu(r, { descriptorVariant: "expendable" })
+    ).toEqual(expendablePdu);
+  });
+});
+
+describe("DIS 7 Detonation PDU", () => {
+  const samplePdu: dis7.DetonationPdu = {
+    header: {
+      protocolVersion: dis7.PROTOCOL_VERSION,
+      exerciseId: 1,
+      pduType: dis7.PDU_TYPE_DETONATION,
+      protocolFamily: dis7.PROTOCOL_FAMILY_WARFARE,
+      timestamp: 0x12345678,
+      length: dis7.detonationPduLength(0),
+      pduStatus: 0,
+      padding: 0,
+    },
+    sourceEntityId: {
+      simulationAddress: { site: 1, application: 2 },
+      entity: 10,
+    },
+    targetEntityId: {
+      simulationAddress: { site: 1, application: 2 },
+      entity: 20,
+    },
+    explodingEntityId: {
+      simulationAddress: { site: 1, application: 2 },
+      entity: 30,
+    },
+    eventId: {
+      simulationAddress: { site: 1, application: 2 },
+      event: 7,
+    },
+    velocity: { x: 10, y: 0, z: -5 },
+    locationInWorldCoordinates: { x: 1000, y: 200, z: 50 },
+    descriptor: {
+      variant: "munition",
+      munition: {
+        munitionType: {
+          kind: 2,
+          domain: 1,
+          country: 225,
+          category: 1,
+          subcategory: 0,
+          specific: 0,
+          extra: 0,
+        },
+        warhead: 1000,
+        fuse: 2000,
+        quantity: 1,
+        rate: 0,
+      },
+    },
+    locationInEntityCoordinates: { x: 0, y: 0, z: 0 },
+    detonationResult: 1,
+    numberOfVariableParameterRecords: 0,
+    padding: 0,
+    variableParameters: [],
+  };
+
+  it("encodes header with PDU type 3, family 2, length 104", () => {
+    const w = new BinaryWriter();
+    dis7.encodeDetonationPdu(w, samplePdu);
+    const u8 = new Uint8Array(w.toArrayBuffer());
+    expect(u8.length).toBe(104);
+    expect(u8[2]).toBe(3);
+    expect(u8[3]).toBe(2);
+    expect(u8[9]).toBe(104);
+  });
+
+  it("round-trips DetonationPdu with munition descriptor", () => {
+    const w = new BinaryWriter();
+    dis7.encodeDetonationPdu(w, samplePdu);
+    const r = new BinaryReader(w.toArrayBuffer());
+    expect(dis7.decodeDetonationPdu(r)).toEqual(samplePdu);
+    expect(r.getOffset()).toBe(104);
+  });
+
+  it("round-trips DetonationPdu with explosion descriptor", () => {
+    const explosionPdu: dis7.DetonationPdu = {
+      ...samplePdu,
+      descriptor: {
+        variant: "explosion",
+        explosion: {
+          explodingObjectType: {
+            kind: 1,
+            domain: 0,
+            country: 0,
+            category: 4,
+            subcategory: 0,
+            specific: 0,
+            extra: 0,
+          },
+          explosiveMaterial: 100,
+          padding: 0,
+          explosiveForce: 250.5,
+        },
+      },
+    };
+    const w = new BinaryWriter();
+    dis7.encodeDetonationPdu(w, explosionPdu);
+    const r = new BinaryReader(w.toArrayBuffer());
+    expect(
+      dis7.decodeDetonationPdu(r, { descriptorVariant: "explosion" })
+    ).toEqual(explosionPdu);
+  });
+
+  it("round-trips DetonationPdu with variable parameters", () => {
+    const pdu: dis7.DetonationPdu = {
+      ...samplePdu,
+      header: {
+        ...samplePdu.header,
+        length: dis7.detonationPduLength(1),
+      },
+      numberOfVariableParameterRecords: 1,
+      variableParameters: [
+        { recordType: 1, recordSpecific: new Array(15).fill(0) },
+      ],
+    };
+    const w = new BinaryWriter();
+    dis7.encodeDetonationPdu(w, pdu);
+    const r = new BinaryReader(w.toArrayBuffer());
+    expect(dis7.decodeDetonationPdu(r)).toEqual(pdu);
+    expect(r.getOffset()).toBe(120);
+  });
+});
+
 describe("DIS 7 Create Entity PDU", () => {
   const samplePdu: dis7.CreateEntityPdu = {
     header: {

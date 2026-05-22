@@ -68,6 +68,8 @@ if (header.pduType === dis7.PDU_TYPE_ENTITY_STATE) {
 | PDU | Encode / Decode | Notes |
 |-----|-----------------|-------|
 | Entity State | `encodeEntityStatePdu` / `decodeEntityStatePdu` | Variable length |
+| Fire | `encodeFirePdu` / `decodeFirePdu` | 96 bytes; see [Warfare PDU descriptors](#warfare-pdu-descriptors) |
+| Detonation | `encodeDetonationPdu` / `decodeDetonationPdu` | 104 + 16×N bytes; see [Warfare PDU descriptors](#warfare-pdu-descriptors) |
 | Create Entity | `encodeCreateEntityPdu` / `decodeCreateEntityPdu` | 28 bytes |
 | Remove Entity | `encodeRemoveEntityPdu` / `decodeRemoveEntityPdu` | 28 bytes |
 | Start/Resume | `encodeStartResumePdu` / `decodeStartResumePdu` | 44 bytes |
@@ -78,6 +80,54 @@ if (header.pduType === dis7.PDU_TYPE_ENTITY_STATE) {
 
 Constants for PDU types, protocol families, and fixed lengths are available on `dis7` (for example `dis7.PDU_TYPE_ENTITY_STATE` and `dis7.CREATE_ENTITY_PDU_LENGTH`).
 
+### Warfare PDU descriptors
+
+Fire and Detonation PDUs include a 128-bit **descriptor** field. The IEEE format does **not** include a tag that says which layout was used—only the sending application knows.
+
+| Layout | Tables | Used by |
+|--------|--------|---------|
+| Munition | 41 | Fire, Detonation |
+| Explosion | 42 | Detonation only |
+| Expendable | 43 | Fire, Detonation |
+
+**Encode:** Set `descriptor.variant` to `"munition"`, `"explosion"`, or `"expendable"` and fill the matching nested object.
+
+```ts
+// Munition (Fire or Detonation)
+descriptor: {
+  variant: "munition",
+  munition: {
+    munitionType: { kind: 2, domain: 1, country: 225, category: 1, subcategory: 0, specific: 0, extra: 0 },
+    warhead: 1000,
+    fuse: 2000,
+    quantity: 1,
+    rate: 0,
+  },
+},
+
+// Explosion (Detonation only)
+descriptor: {
+  variant: "explosion",
+  explosion: {
+    explodingObjectType: { kind: 1, domain: 0, country: 0, category: 4, subcategory: 0, specific: 0, extra: 0 },
+    explosiveMaterial: 100,
+    padding: 0,
+    explosiveForce: 250.5,
+  },
+},
+```
+
+For expendable descriptors, `expendable.padding` must be exactly **8 bytes** (64 bits unused, typically all zeros). Use `dis7.EXPENDABLE_DESCRIPTOR_PADDING_BYTES`.
+
+**Decode:** Pass `descriptorVariant` when you know the layout; otherwise the codec defaults to `"munition"`:
+
+- `decodeFirePdu(reader, { descriptorVariant: "expendable" })`
+- `decodeDetonationPdu(reader, { descriptorVariant: "explosion" })`
+
+If the assumption is wrong, the trailing 64 bits are misinterpreted. The `variant` on the decoded object reflects your assumption, not the packet.
+
+Detonation PDUs may also include **variable parameter** records (same 16-byte layout as Entity State). Total size is `dis7.detonationPduLength(N)` = 104 + 16×N bytes.
+
 ### Byte array requirements (important)
 
 Some PDU fields are fixed-size byte arrays. These fields are public `number[]` values (JSON-safe), but they **must** be the exact required length when encoding:
@@ -85,6 +135,7 @@ Some PDU fields are fixed-size byte arrays. These fields are public `number[]` v
 - `entityMarking.characters`: **11 bytes**
 - `deadReckoningParameters.otherParameters`: **15 bytes**
 - `variableParameters[].recordSpecific`: **15 bytes**
+- `descriptor.expendable.padding` (Fire / Detonation): **8 bytes**
 
 For Entity Marking text, use the helper to create a valid 11-byte ASCII array:
 
